@@ -103,3 +103,22 @@ def get_costs():
         return jsonify({"error": str(e)}), 400
     except Exception as e:
         return jsonify({"error": "Erro interno do servidor"}), 500
+
+
+@costs_bp.route("/costs/<int:cost_id>", methods=["GET"])
+@require_auth
+def get_cost_by_id(cost_id):
+    try:
+        # Busca o gasto específico
+        cost = cost_controller.get_cost_by_id(
+            user_id=request.user["id"],
+            cost_id=cost_id
+        )
+        
+        if not cost:
+            return jsonify({"error": "Gasto não encontrado"}), 404
+            
+        return jsonify(cost), 200
+
+    except Exception as e:
+        return jsonify({"error": "Erro interno do servidor"}), 500

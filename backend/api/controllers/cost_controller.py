@@ -113,4 +113,29 @@ class CostController:
             raise e
         finally:
             if conn:
+                self.db.close_connection()
+
+    def get_cost_by_id(self, user_id: int, cost_id: int) -> Optional[Dict]:
+        try:
+            conn = self.db.get_connection()
+            with conn.cursor(cursor_factory=DictCursor) as cur:
+                cur.execute(
+                    """
+                    SELECT id, title, description, value, transaction_date
+                    FROM costs
+                    WHERE id = %s AND user_id = %s
+                    """,
+                    (cost_id, user_id)
+                )
+                cost = cur.fetchone()
+                
+                if not cost:
+                    return None
+
+                return dict(cost)
+
+        except Exception as e:
+            raise e
+        finally:
+            if conn:
                 self.db.close_connection() 
