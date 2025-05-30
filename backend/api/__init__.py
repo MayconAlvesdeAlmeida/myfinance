@@ -2,6 +2,7 @@ from flask import Flask
 from api.routes.healthcheck import healthcheck_bp
 from api.routes.users import users_bp
 from api.routes.costs import costs_bp
+from api.routes.receivements import receivements_bp
 
 
 app = Flask(__name__)
@@ -9,3 +10,4 @@ app = Flask(__name__)
 app.register_blueprint(healthcheck_bp, url_prefix="/api")
 app.register_blueprint(users_bp, url_prefix="/api")
 app.register_blueprint(costs_bp, url_prefix="/api")
+app.register_blueprint(receivements_bp, url_prefix="/api")
