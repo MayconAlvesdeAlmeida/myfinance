@@ -19,4 +19,18 @@ class GetCostsDTO(BaseModel):
 
     def validate_dates(self):
         if self.start_date and self.end_date and self.start_date > self.end_date:
-            raise ValueError("Data inicial não pode ser maior que a data final") 
+            raise ValueError("Data inicial não pode ser maior que a data final")
+
+
+class UpdateCostDTO(BaseModel):
+    title: str = Field(..., min_length=1, max_length=255)
+    description: Optional[str] = None
+    value: Decimal = Field(..., gt=0, decimal_places=2)
+    transaction_date: date
+
+
+class PatchCostDTO(BaseModel):
+    title: Optional[str] = Field(None, min_length=1, max_length=255)
+    description: Optional[str] = None
+    value: Optional[Decimal] = Field(None, gt=0, decimal_places=2)
+    transaction_date: Optional[date] = None

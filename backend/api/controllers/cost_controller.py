@@ -138,4 +138,131 @@ class CostController:
             raise e
         finally:
             if conn:
+                self.db.close_connection()
+
+    def update_cost(
+        self,
+        user_id: int,
+        cost_id: int,
+        title: str,
+        description: Optional[str],
+        value: Decimal,
+        transaction_date: date,
+    ) -> Optional[Dict]:
+        try:
+            conn = self.db.get_connection()
+            with conn.cursor(cursor_factory=DictCursor) as cur:
+                # Verifica se o gasto existe e pertence ao usuário
+                cur.execute(
+                    "SELECT id FROM costs WHERE id = %s AND user_id = %s",
+                    (cost_id, user_id)
+                )
+                if not cur.fetchone():
+                    return None
+
+                # Atualiza o gasto
+                cur.execute(
+                    """
+                    UPDATE costs
+                    SET title = %s,
+                        description = %s,
+                        value = %s,
+                        transaction_date = %s
+                    WHERE id = %s AND user_id = %s
+                    RETURNING id, title, description, value, transaction_date
+                    """,
+                    (title, description, value, transaction_date, cost_id, user_id)
+                )
+                updated_cost = cur.fetchone()
+                conn.commit()
+
+                return dict(updated_cost)
+
+        except Exception as e:
+            if conn:
+                conn.rollback()
+            raise e
+        finally:
+            if conn:
+                self.db.close_connection()
+
+    def patch_cost(
+        self,
+        user_id: int,
+        cost_id: int,
+        updates: Dict
+    ) -> Optional[Dict]:
+        try:
+            conn = self.db.get_connection()
+            with conn.cursor(cursor_factory=DictCursor) as cur:
+                # Verifica se o gasto existe e pertence ao usuário
+                cur.execute(
+                    "SELECT * FROM costs WHERE id = %s AND user_id = %s",
+                    (cost_id, user_id)
+                )
+                current_cost = cur.fetchone()
+                if not current_cost:
+                    return None
+
+                # Monta a query de atualização dinamicamente
+                update_fields = []
+                params = []
+                for key, value in updates.items():
+                    if value is not None:
+                        update_fields.append(f"{key} = %s")
+                        params.append(value)
+
+                if not update_fields:
+                    return dict(current_cost)
+
+                # Adiciona os parâmetros restantes
+                params.extend([cost_id, user_id])
+
+                # Executa a atualização
+                query = f"""
+                    UPDATE costs
+                    SET {", ".join(update_fields)}
+                    WHERE id = %s AND user_id = %s
+                    RETURNING id, title, description, value, transaction_date
+                """
+                cur.execute(query, params)
+                updated_cost = cur.fetchone()
+                conn.commit()
+
+                return dict(updated_cost)
+
+        except Exception as e:
+            if conn:
+                conn.rollback()
+            raise e
+        finally:
+            if conn:
+                self.db.close_connection()
+
+    def delete_cost(self, user_id: int, cost_id: int) -> bool:
+        try:
+            conn = self.db.get_connection()
+            with conn.cursor() as cur:
+                # Verifica se o gasto existe e pertence ao usuário
+                cur.execute(
+                    "SELECT id FROM costs WHERE id = %s AND user_id = %s",
+                    (cost_id, user_id)
+                )
+                if not cur.fetchone():
+                    return False
+
+                # Remove o gasto
+                cur.execute(
+                    "DELETE FROM costs WHERE id = %s AND user_id = %s",
+                    (cost_id, user_id)
+                )
+                conn.commit()
+                return True
+
+        except Exception as e:
+            if conn:
+                conn.rollback()
+            raise e
+        finally:
+            if conn:
                 self.db.close_connection() 

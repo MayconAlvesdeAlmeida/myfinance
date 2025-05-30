@@ -1,6 +1,6 @@
 from flask import Blueprint, request, jsonify, url_for
 from api.controllers.cost_controller import CostController
-from api.dtos.cost_dto import CreateCostDTO, GetCostsDTO
+from api.dtos.cost_dto import CreateCostDTO, GetCostsDTO, UpdateCostDTO, PatchCostDTO
 from api.middlewares.auth_middleware import require_auth
 from pydantic import ValidationError
 from datetime import datetime
@@ -111,14 +111,87 @@ def get_cost_by_id(cost_id):
     try:
         # Busca o gasto específico
         cost = cost_controller.get_cost_by_id(
-            user_id=request.user["id"],
-            cost_id=cost_id
+            user_id=request.user["id"], cost_id=cost_id
         )
-        
+
         if not cost:
             return jsonify({"error": "Gasto não encontrado"}), 404
-            
+
         return jsonify(cost), 200
+
+    except Exception as e:
+        return jsonify({"error": "Erro interno do servidor"}), 500
+
+
+@costs_bp.route("/costs/<int:cost_id>", methods=["PUT"])
+@require_auth
+def update_cost(cost_id):
+    try:
+        data = request.get_json()
+        # Valida os dados recebidos usando o DTO
+        cost_data = UpdateCostDTO(**data)
+
+        # Atualiza o gasto
+        updated_cost = cost_controller.update_cost(
+            user_id=request.user["id"],
+            cost_id=cost_id,
+            title=cost_data.title,
+            description=cost_data.description,
+            value=cost_data.value,
+            transaction_date=cost_data.transaction_date,
+        )
+
+        if not updated_cost:
+            return jsonify({"error": "Gasto não encontrado"}), 404
+
+        return jsonify(updated_cost), 200
+
+    except ValidationError as e:
+        return jsonify({"error": "Dados inválidos", "details": e.errors()}), 400
+    except Exception as e:
+        return jsonify({"error": "Erro interno do servidor"}), 500
+
+
+@costs_bp.route("/costs/<int:cost_id>", methods=["PATCH"])
+@require_auth
+def patch_cost(cost_id):
+    try:
+        data = request.get_json()
+        # Valida os dados recebidos usando o DTO
+        cost_data = PatchCostDTO(**data)
+
+        # Filtra apenas os campos que foram fornecidos
+        updates = {k: v for k, v in cost_data.dict().items() if v is not None}
+
+        # Atualiza o gasto
+        updated_cost = cost_controller.patch_cost(
+            user_id=request.user["id"], cost_id=cost_id, updates=updates
+        )
+
+        if not updated_cost:
+            return jsonify({"error": "Gasto não encontrado"}), 404
+
+        return jsonify(updated_cost), 200
+
+    except ValidationError as e:
+        return jsonify({"error": "Dados inválidos", "details": e.errors()}), 400
+    except Exception as e:
+        return jsonify({"error": "Erro interno do servidor"}), 500
+
+
+@costs_bp.route("/costs/<int:cost_id>", methods=["DELETE"])
+@require_auth
+def delete_cost(cost_id):
+    try:
+        # Remove o gasto
+        success = cost_controller.delete_cost(
+            user_id=request.user["id"], cost_id=cost_id
+        )
+
+        if not success:
+            return jsonify({"error": "Gasto não encontrado"}), 404
+
+        return "", 204
 
     except Exception as e:
         return jsonify({"error": "Erro interno do servidor"}), 500
