@@ -1,6 +1,6 @@
 from flask import Blueprint, request, jsonify
 from api.controllers.user_controller import UserController
-from api.dtos.user_dto import CreateUserDTO
+from api.dtos.user_dto import CreateUserDTO, LoginUserDTO
 from pydantic import ValidationError
 
 users_bp = Blueprint("users", __name__)
@@ -25,5 +25,27 @@ def create_user():
         return jsonify({"error": "Dados inválidos", "details": e.errors()}), 400
     except ValueError as e:
         return jsonify({"error": str(e)}), 400
+    except Exception as e:
+        return jsonify({"error": "Erro interno do servidor"}), 500
+
+
+@users_bp.route("/users/login", methods=["POST"])
+def login():
+    try:
+        data = request.get_json()
+        # Valida os dados recebidos usando o DTO
+        user_data = LoginUserDTO(**data)
+
+        # Realiza o login
+        result = user_controller.login(
+            email=user_data.email, password=user_data.password
+        )
+
+        return jsonify(result), 200
+
+    except ValidationError as e:
+        return jsonify({"error": "Dados inválidos", "details": e.errors()}), 400
+    except ValueError as e:
+        return jsonify({"error": str(e)}), 401
     except Exception as e:
         return jsonify({"error": "Erro interno do servidor"}), 500
