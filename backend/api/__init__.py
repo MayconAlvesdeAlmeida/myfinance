@@ -16,7 +16,7 @@ def handle_preflight():
         response.headers.add("Access-Control-Allow-Methods", "*")
         return response
 
-app.register_blueprint(healthcheck_bp, url_prefix="/api")
-app.register_blueprint(users_bp, url_prefix="/api")
-app.register_blueprint(costs_bp, url_prefix="/api")
-app.register_blueprint(receivements_bp, url_prefix="/api")
+app.register_blueprint(healthcheck_bp)
+app.register_blueprint(users_bp)
+app.register_blueprint(costs_bp)
+app.register_blueprint(receivements_bp)
